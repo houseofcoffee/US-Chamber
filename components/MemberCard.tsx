@@ -1,6 +1,6 @@
 import React from 'react';
 import { Member } from '../types';
-import { Mail, Phone, MapPin, Link as LinkIcon, Edit2, Trash2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react';
 
 interface MemberCardProps {
   member: Member;
@@ -23,7 +23,7 @@ const getOptimizedImageUrl = (url: string) => {
   return url;
 };
 
-export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => {
+export const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
   // SAFETY CHECK: Use optional chaining (?.) to prevent crashes if data is missing
   const hasWebsite = member.website && member.website.length > 0;
   
@@ -54,23 +54,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
             }
           }}
         />
-        {/* Action Buttons (Overlay) */}
-        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button 
-            onClick={() => onEdit(member)}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-indigo-50 text-indigo-600 shadow-sm transition-colors"
-            title="Edit Member"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button 
-            onClick={() => onDelete(member.id)}
-            className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-red-50 text-red-500 shadow-sm transition-colors"
-            title="Delete Member"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        {/* Action Buttons (Overlay) removed here */}
       </div>
 
       {/* Content Body */}
