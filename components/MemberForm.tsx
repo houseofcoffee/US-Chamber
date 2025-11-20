@@ -33,7 +33,6 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name as keyof MemberFormData]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
@@ -65,7 +64,7 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
       if (exists) {
         newSpecialties = newSpecialties.filter(s => s !== specialty);
       } else {
-        if (newSpecialties.length >= 2) return prev; // Prevent adding more than 2
+        if (newSpecialties.length >= 2) return prev;
         newSpecialties.push(specialty);
       }
 
@@ -76,7 +75,6 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic Validation
     const newErrors: Partial<Record<keyof MemberFormData, string>> = {};
     if (!formData.name) newErrors.name = "Name is required";
     if (!formData.email) newErrors.email = "Email is required";
@@ -90,7 +88,8 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
     onSubmit(formData);
   };
 
-  const photoPreview = formData.photoUrl || 'https://via.placeholder.com/400x300?text=Upload+Photo';
+  // FIXED: Switched to placehold.co because via.placeholder.com is down
+  const photoPreview = formData.photoUrl || 'https://placehold.co/400x300?text=Upload+Photo';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
@@ -117,7 +116,7 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
                     src={photoPreview} 
                     alt="Preview" 
                     className="w-full h-full object-cover" 
-                    onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Photo'} 
+                    onError={(e) => (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=No+Photo'} 
                    />
                  </div>
                  <div className="flex-1">
