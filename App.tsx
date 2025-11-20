@@ -42,7 +42,7 @@ export interface Member {
   website: string;
   specialties: string[];
   photoUrl: string;
-  pin?: string; // New field for the PIN
+  pin?: string;
 }
 
 export type MemberFormData = Omit<Member, 'id'>;
@@ -75,7 +75,22 @@ const inferSpecialties = (businessName: string, existingSpecialties: string[]): 
   return Array.from(tags).slice(0, 2);
 };
 
+const getOptimizedImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.includes('drive.google.com')) {
+    let idMatch = url.match(/id=([^&]+)/);
+    if (!idMatch) {
+      idMatch = url.match(/\/file\/d\/([^/]+)/);
+    }
+    if (idMatch && idMatch[1]) {
+      return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800`;
+    }
+  }
+  return url;
+};
+
 // --- SERVICES ---
+
 async function fetchMembers(): Promise<Member[]> {
   try {
     const response = await fetch(SHEETS_API_URL);
@@ -97,22 +112,17 @@ async function fetchMembers(): Promise<Member[]> {
         website: item.website || '',
         specialties: inferSpecialties(item.businessName || '', rawSpecialties), 
         photoUrl: item.photoUrl || '',
-        pin: item.pin ? String(item.pin) : '' // Ensure PIN is a string
+        pin: item.pin ? String(item.pin) : '' 
       };
     });
 
-    // SORTING: Sort by Last Name (Ascending)
     cleanData.sort((a: any, b: any) => {
       const getLastName = (fullName: string) => {
         if (!fullName) return '';
         const parts = fullName.trim().split(' ');
         return parts.length > 0 ? parts[parts.length - 1].toLowerCase() : '';
       };
-
-      const lastNameA = getLastName(a.name);
-      const lastNameB = getLastName(b.name);
-
-      return lastNameA.localeCompare(lastNameB);
+      return getLastName(a.name).localeCompare(getLastName(b.name));
     });
 
     return cleanData;
@@ -122,28 +132,33 @@ async function fetchMembers(): Promise<Member[]> {
   }
 }
 
-async function addMember(member: Omit<Member, 'id'>): Promise<{ success: boolean; id?: string }> {
+async function addMember(member: any): Promise<{ success: boolean; id?: string }> {
   try {
+    const isUpdate = !!member.id; 
+    const payload = {
+      ...member,
+      action: isUpdate ? 'update' : 'create' 
+    };
+
     const response = await fetch(SHEETS_API_URL, {
       method: 'POST',
-      body: JSON.stringify(member),
+      body: JSON.stringify(payload),
     });
     
     if (!response.ok) {
-      throw new Error('Failed to add member');
+      throw new Error(isUpdate ? 'Failed to update member' : 'Failed to add member');
     }
     
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error('Error adding member:', error);
+    console.error('Error saving member:', error);
     return { success: false };
   }
 }
 
-// --- COMPONENTS ---
+// --- SUB-COMPONENTS ---
 
-// 1. PinModal Component
 interface PinModalProps {
   onSubmit: (pin: string) => void;
   onCancel: () => void;
@@ -162,7 +177,7 @@ const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
       <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6">
         <div className="text-center mb-6">
           <h3 className="text-lg font-bold text-slate-900">Enter Security PIN</h3>
-          <p className="text-sm text-slate-500 mt-1">Please enter the last 4 digits of the member's phone number to edit.</p>
+          <p className="text-sm text-slate-500 mt-1">Please enter the last 4 digits of your phone number to edit.</p>
         </div>
         <form onSubmit={handleSubmit}>
           <input
@@ -196,27 +211,13 @@ const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
   );
 };
 
-// 2. MemberCard Component
 interface MemberCardProps {
   member: Member;
   onEdit: (member: Member) => void;
+  onDelete: (id: string) => void;
 }
 
-const getOptimizedImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.includes('drive.google.com')) {
-    let idMatch = url.match(/id=([^&]+)/);
-    if (!idMatch) {
-      idMatch = url.match(/\/file\/d\/([^/]+)/);
-    }
-    if (idMatch && idMatch[1]) {
-      return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800`;
-    }
-  }
-  return url;
-};
-
-const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
+const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => {
   const hasWebsite = member.website && member.website.length > 0;
   const websiteUrl = hasWebsite && !member.website?.startsWith('http') 
     ? `https://${member.website}` 
@@ -310,7 +311,6 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
   );
 };
 
-// 3. MemberForm Component
 interface MemberFormProps {
   initialData?: Member;
   onSubmit: (data: MemberFormData) => void;
@@ -353,7 +353,6 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
         alert("File is too large. Please upload an image smaller than 5MB.");
         return;
       }
-
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
@@ -368,21 +367,18 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
     setFormData(prev => {
       const exists = prev.specialties.includes(specialty);
       let newSpecialties = [...prev.specialties];
-
       if (exists) {
         newSpecialties = newSpecialties.filter(s => s !== specialty);
       } else {
         if (newSpecialties.length >= 2) return prev;
         newSpecialties.push(specialty);
       }
-
       return { ...prev, specialties: newSpecialties };
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     const newErrors: Partial<Record<keyof MemberFormData, string>> = {};
     if (!formData.name) newErrors.name = "Name is required";
     if (!formData.email) newErrors.email = "Email is required";
@@ -392,7 +388,6 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
       setErrors(newErrors);
       return;
     }
-
     onSubmit(formData);
   };
 
@@ -401,7 +396,6 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        
         <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-slate-800">
             {initialData ? 'Edit Member' : 'Add New Member'}
@@ -410,36 +404,21 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
             <X className="text-slate-500" />
           </button>
         </div>
-
         <div className="p-6 overflow-y-auto">
           <form id="memberForm" onSubmit={handleSubmit} className="space-y-6">
-            
             <div>
                <label className="block text-sm font-medium text-slate-700 mb-2">Photo</label>
                <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
                  <div className="w-24 h-24 rounded-full bg-white overflow-hidden shrink-0 border-2 border-white shadow-md">
-                   <img 
-                    src={photoPreview} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=No+Photo'} 
-                   />
+                   <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=No+Photo'} />
                  </div>
                  <div className="flex-1">
                    <label className="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all cursor-pointer">
                      <Upload size={16} className="mr-2" />
                      <span>Upload Photo</span>
-                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                     />
+                     <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                    </label>
-                   <p className="mt-2 text-xs text-slate-500">
-                     Upload a professional photo from your device.<br/>
-                     Supported formats: JPG, PNG. Max 5MB.
-                   </p>
+                   <p className="mt-2 text-xs text-slate-500">Upload a professional photo from your device.<br/>Supported formats: JPG, PNG. Max 5MB.</p>
                  </div>
                </div>
             </div>
@@ -447,27 +426,12 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Jane Doe"
-                  className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.name ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`}
-                />
+                <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Jane Doe" className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.name ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`} />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Business Name *</label>
-                <input
-                  type="text"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleChange}
-                  placeholder="e.g. Acme Corp"
-                  className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.businessName ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`}
-                />
+                <input type="text" name="businessName" value={formData.businessName} onChange={handleChange} placeholder="e.g. Acme Corp" className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.businessName ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`} />
                 {errors.businessName && <p className="text-red-500 text-xs mt-1">{errors.businessName}</p>}
               </div>
             </div>
@@ -475,62 +439,29 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="jane@example.com"
-                  className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`}
-                />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="jane@example.com" className={`w-full p-2 border rounded-lg outline-none transition-all ${errors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:ring-2 focus:ring-indigo-500'}`} />
                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="(555) 123-4567"
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                />
+                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="(555) 123-4567" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Business Address</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                placeholder="123 Main St, City, State"
-                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              />
+              <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Main St, City, State" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Business Website</label>
-              <input
-                type="text"
-                name="website"
-                value={formData.website}
-                onChange={handleChange}
-                placeholder="www.example.com"
-                className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-              />
+              <input type="text" name="website" value={formData.website} onChange={handleChange} placeholder="www.example.com" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-slate-700">Specialties</label>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  formData.specialties.length === 2 
-                    ? 'bg-amber-100 text-amber-700' 
-                    : 'bg-slate-100 text-slate-600'
-                }`}>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${formData.specialties.length === 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
                   Selected: {formData.specialties.length}/2
                 </span>
               </div>
@@ -538,23 +469,8 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
                 {ALL_SPECIALTIES.map((specialty) => {
                   const isSelected = formData.specialties.includes(specialty);
                   const isDisabled = !isSelected && formData.specialties.length >= 2;
-                  
                   return (
-                    <button
-                      key={specialty}
-                      type="button"
-                      onClick={() => toggleSpecialty(specialty)}
-                      disabled={isDisabled}
-                      className={`
-                        flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all border
-                        ${isSelected 
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
-                          : isDisabled
-                            ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-60'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
-                        }
-                      `}
-                    >
+                    <button key={specialty} type="button" onClick={() => toggleSpecialty(specialty)} disabled={isDisabled} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all border ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : isDisabled ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-60' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'}`}>
                       {specialty}
                       {isSelected && <Check size={14} />}
                     </button>
@@ -563,22 +479,11 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
               </div>
               <p className="text-xs text-slate-400 mt-2">Select up to 2 specialties.</p>
             </div>
-
           </form>
         </div>
-
         <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
-          <button 
-            onClick={onCancel}
-            className="px-4 py-2 text-slate-600 font-medium hover:text-slate-800 transition-colors hover:bg-slate-200/50 rounded-lg"
-          >
-            Cancel
-          </button>
-          <button 
-            form="memberForm"
-            type="submit"
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-          >
+          <button onClick={onCancel} className="px-4 py-2 text-slate-600 font-medium hover:text-slate-800 transition-colors hover:bg-slate-200/50 rounded-lg">Cancel</button>
+          <button form="memberForm" type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all">
             {initialData ? 'Update Member' : 'Create Member'}
           </button>
         </div>
@@ -588,6 +493,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, onCancel
 };
 
 // --- MAIN APP ---
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -640,7 +546,6 @@ const App: React.FC = () => {
   };
 
   const handleEditClick = (member: Member) => {
-    // Instead of opening form immediately, prompt for PIN
     setVerifyPinMember(member);
   };
 
@@ -665,22 +570,20 @@ const App: React.FC = () => {
   const handleFormSubmit = async (data: any) => {
     setIsSaving(true);
     
-    if (editingMember) {
-      // TODO: Implement Edit logic in Google Apps Script
-      // For now, just show alert
-      alert('Edit functionality needs to be implemented in the Google Apps Script.');
+    const submissionData = editingMember 
+      ? { ...data, id: editingMember.id } 
+      : data;
+
+    const result = await addMember(submissionData);
+    
+    if (result.success) {
+      await loadMembers(); 
       setIsFormOpen(false);
-      setIsSaving(false);
+      setEditingMember(undefined);
     } else {
-      const result = await addMember(data);
-      if (result.success) {
-        await loadMembers(); 
-        setIsFormOpen(false);
-      } else {
-        alert('Failed to add member. Please try again.');
-      }
-      setIsSaving(false);
+      alert('Failed to save member. Please try again.');
     }
+    setIsSaving(false);
   };
 
   const filteredMembers = members.filter(m => {
@@ -778,7 +681,6 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* Specialty Filter Bubbles */}
         <div className="mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex gap-2">
             <button
@@ -843,7 +745,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Edit Form Modal */}
       {isFormOpen && (
         <MemberForm
           initialData={editingMember}
@@ -852,7 +753,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* PIN Verification Modal */}
       {verifyPinMember && (
         <PinModal
           onSubmit={handlePinVerify}
