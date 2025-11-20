@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter } from 'lucide-react';
+import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter, Edit2 } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const SITE_PASSWORD = 'member'; 
@@ -42,13 +42,13 @@ export interface Member {
   website: string;
   specialties: string[];
   photoUrl: string;
+  pin?: string; // New field for the PIN
 }
 
 export type MemberFormData = Omit<Member, 'id'>;
 
 // --- HELPERS ---
 
-// AUTO-MAGIC SPECIALTY ASSIGNER
 const inferSpecialties = (businessName: string, existingSpecialties: string[]): string[] => {
   if (existingSpecialties && existingSpecialties.length > 0 && existingSpecialties[0] !== '') {
     return existingSpecialties;
@@ -96,7 +96,8 @@ async function fetchMembers(): Promise<Member[]> {
         address: item.address || '',
         website: item.website || '',
         specialties: inferSpecialties(item.businessName || '', rawSpecialties), 
-        photoUrl: item.photoUrl || '' 
+        photoUrl: item.photoUrl || '',
+        pin: item.pin ? String(item.pin) : '' // Ensure PIN is a string
       };
     });
 
@@ -142,16 +143,67 @@ async function addMember(member: Omit<Member, 'id'>): Promise<{ success: boolean
 
 // --- COMPONENTS ---
 
-// 1. MemberCard Component
+// 1. PinModal Component
+interface PinModalProps {
+  onSubmit: (pin: string) => void;
+  onCancel: () => void;
+}
+
+const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
+  const [pin, setPin] = useState('');
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(pin);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6">
+        <div className="text-center mb-6">
+          <h3 className="text-lg font-bold text-slate-900">Enter Security PIN</h3>
+          <p className="text-sm text-slate-500 mt-1">Please enter the last 4 digits of the member's phone number to edit.</p>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            maxLength={4}
+            placeholder="0000"
+            className="w-full p-4 text-center text-2xl tracking-widest border-2 border-slate-200 rounded-xl focus:border-indigo-600 focus:ring-0 outline-none mb-6 font-mono"
+            autoFocus
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={pin.length < 4}
+              className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Verify
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// 2. MemberCard Component
 interface MemberCardProps {
   member: Member;
   onEdit: (member: Member) => void;
-  onDelete: (id: string) => void;
 }
 
 const getOptimizedImageUrl = (url: string) => {
   if (!url) return '';
-  
   if (url.includes('drive.google.com')) {
     let idMatch = url.match(/id=([^&]+)/);
     if (!idMatch) {
@@ -164,7 +216,7 @@ const getOptimizedImageUrl = (url: string) => {
   return url;
 };
 
-const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
+const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
   const hasWebsite = member.website && member.website.length > 0;
   const websiteUrl = hasWebsite && !member.website?.startsWith('http') 
     ? `https://${member.website}` 
@@ -173,8 +225,19 @@ const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
   const validPhotoUrl = getOptimizedImageUrl(member.photoUrl);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
-      {/* SQUARE IMAGE CONTAINER: aspect-square ensures 1:1 ratio (perfect square) */}
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group relative">
+      {/* Edit Button (Visible on Hover) */}
+      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onEdit(member)}
+          className="p-2 bg-white/90 backdrop-blur-sm rounded-full text-indigo-600 shadow-sm hover:bg-indigo-50 transition-colors"
+          title="Edit Member"
+        >
+          <Edit2 size={16} />
+        </button>
+      </div>
+
+      {/* SQUARE IMAGE CONTAINER */}
       <div className="aspect-square w-full overflow-hidden relative bg-white border-b border-slate-100">
         <img
           src={validPhotoUrl || placeholderImage}
@@ -247,7 +310,7 @@ const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
   );
 };
 
-// 2. MemberForm Component
+// 3. MemberForm Component
 interface MemberFormProps {
   initialData?: Member;
   onSubmit: (data: MemberFormData) => void;
@@ -534,6 +597,7 @@ const App: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | undefined>(undefined);
+  const [verifyPinMember, setVerifyPinMember] = useState<Member | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -575,9 +639,21 @@ const App: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleEditMember = (member: Member) => {
-    setEditingMember(member);
-    setIsFormOpen(true);
+  const handleEditClick = (member: Member) => {
+    // Instead of opening form immediately, prompt for PIN
+    setVerifyPinMember(member);
+  };
+
+  const handlePinVerify = (pin: string) => {
+    if (verifyPinMember) {
+      if (pin === verifyPinMember.pin) {
+        setEditingMember(verifyPinMember);
+        setIsFormOpen(true);
+        setVerifyPinMember(undefined);
+      } else {
+        alert("Incorrect PIN. Please try again.");
+      }
+    }
   };
 
   const handleDeleteMember = (id: string) => {
@@ -590,7 +666,9 @@ const App: React.FC = () => {
     setIsSaving(true);
     
     if (editingMember) {
-      alert('Edit functionality needs to be implemented');
+      // TODO: Implement Edit logic in Google Apps Script
+      // For now, just show alert
+      alert('Edit functionality needs to be implemented in the Google Apps Script.');
       setIsFormOpen(false);
       setIsSaving(false);
     } else {
@@ -757,7 +835,7 @@ const App: React.FC = () => {
               <MemberCard
                 key={member.id}
                 member={member}
-                onEdit={handleEditMember}
+                onEdit={handleEditClick}
                 onDelete={handleDeleteMember}
               />
             ))}
@@ -765,11 +843,20 @@ const App: React.FC = () => {
         )}
       </main>
 
+      {/* Edit Form Modal */}
       {isFormOpen && (
         <MemberForm
           initialData={editingMember}
           onSubmit={handleFormSubmit}
           onCancel={() => setIsFormOpen(false)}
+        />
+      )}
+
+      {/* PIN Verification Modal */}
+      {verifyPinMember && (
+        <PinModal
+          onSubmit={handlePinVerify}
+          onCancel={() => setVerifyPinMember(undefined)}
         />
       )}
       
