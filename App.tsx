@@ -1,15 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Member, MemberFormData } from './types';
 import { MemberCard } from './components/MemberCard';
 import { MemberForm } from './components/MemberForm';
-import { generateSampleMembers } from './services/geminiService';
-import { Plus, Sparkles, Users, Search } from 'lucide-react';
+import { Plus, Users, Search } from 'lucide-react';
 
 const App: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | undefined>(undefined);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleAddMember = () => {
@@ -43,18 +41,6 @@ const App: React.FC = () => {
     setIsFormOpen(false);
   };
 
-  const handleGenerateData = useCallback(async () => {
-    setIsGenerating(true);
-    try {
-      const newMembers = await generateSampleMembers();
-      setMembers(prev => [...newMembers, ...prev]);
-    } catch (error) {
-      alert("Failed to generate members via Gemini API. Please check your API key.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
-
   const filteredMembers = members.filter(m => 
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     m.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,15 +66,6 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleGenerateData}
-              disabled={isGenerating}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Sparkles size={16} className={isGenerating ? "animate-spin" : ""} />
-              {isGenerating ? "Generating..." : "AI Auto-Fill"}
-            </button>
-
             <button
               onClick={handleAddMember}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all hover:shadow-md active:scale-95"
@@ -126,13 +103,11 @@ const App: React.FC = () => {
              </div>
              <h3 className="text-lg font-medium text-slate-900">No members found</h3>
              <p className="mt-2 text-slate-500">
-               {searchTerm ? "Try adjusting your search terms." : "Get started by adding a new member or using AI Auto-Fill."}
+               {searchTerm ? "Try adjusting your search terms." : "Get started by adding a new member."}
              </p>
              {!searchTerm && (
-                <div className="mt-6 flex justify-center gap-4">
-                   <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Manually</button>
-                   <span className="text-slate-300">|</span>
-                   <button onClick={handleGenerateData} className="text-indigo-600 hover:underline">Generate Sample Data</button>
+                <div className="mt-6 flex justify-center">
+                   <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Member</button>
                 </div>
              )}
           </div>
