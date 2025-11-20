@@ -49,9 +49,7 @@ export type MemberFormData = Omit<Member, 'id'>;
 // --- HELPERS ---
 
 // AUTO-MAGIC SPECIALTY ASSIGNER
-// This automatically guesses specialties based on the business name
 const inferSpecialties = (businessName: string, existingSpecialties: string[]): string[] => {
-  // If the sheet already has specialties, use them!
   if (existingSpecialties && existingSpecialties.length > 0 && existingSpecialties[0] !== '') {
     return existingSpecialties;
   }
@@ -59,7 +57,6 @@ const inferSpecialties = (businessName: string, existingSpecialties: string[]): 
   const name = businessName.toLowerCase();
   const tags = new Set<string>();
 
-  // Keyword Mapping
   if (name.includes('farm') || name.includes('hay') || name.includes('dairy')) tags.add(Specialty.Agriculture);
   if (name.includes('tech') || name.includes('web') || name.includes('data') || name.includes('systems') || name.includes('precision') || name.includes('digital') || name.includes('cyber')) tags.add(Specialty.Technology);
   if (name.includes('health') || name.includes('medical') || name.includes('care') || name.includes('wellness') || name.includes('dental') || name.includes('clinic')) tags.add(Specialty.Healthcare);
@@ -71,12 +68,10 @@ const inferSpecialties = (businessName: string, existingSpecialties: string[]): 
   if (name.includes('coffee') || name.includes('wine') || name.includes('shop') || name.includes('store') || name.includes('market') || name.includes('grape') || name.includes('retail') || name.includes('sales') || name.includes('solar')) tags.add(Specialty.Retail);
   if (name.includes('online') || name.includes('.com') || name.includes('e-commerce')) tags.add(Specialty.ECommerce);
 
-  // Default fallback if nothing matched
   if (tags.size === 0) {
-    tags.add(Specialty.Consulting); // Safe default for Chamber members
+    tags.add(Specialty.Consulting);
   }
 
-  // Return top 2 tags
   return Array.from(tags).slice(0, 2);
 };
 
@@ -89,7 +84,6 @@ async function fetchMembers(): Promise<Member[]> {
     }
     const rawData = await response.json();
     
-    // SAFETY LAYER & AUTO-ASSIGN
     const cleanData = rawData.map((item: any) => {
       const rawSpecialties = Array.isArray(item.specialties) ? item.specialties : item.specialties ? item.specialties.split(',') : [];
       
@@ -101,7 +95,6 @@ async function fetchMembers(): Promise<Member[]> {
         phone: item.phone || '',
         address: item.address || '',
         website: item.website || '',
-        // Use the Smart Assigner here!
         specialties: inferSpecialties(item.businessName || '', rawSpecialties), 
         photoUrl: item.photoUrl || '' 
       };
@@ -145,17 +138,11 @@ interface MemberCardProps {
 const getOptimizedImageUrl = (url: string) => {
   if (!url) return '';
   
-  // Check for standard Google Drive links
   if (url.includes('drive.google.com')) {
-    // Pattern 1: Query parameter style (id=...)
     let idMatch = url.match(/id=([^&]+)/);
-    
-    // Pattern 2: Path style (/file/d/...) - THIS IS THE FIX
     if (!idMatch) {
       idMatch = url.match(/\/file\/d\/([^/]+)/);
     }
-
-    // If we found an ID, convert to thumbnail format
     if (idMatch && idMatch[1]) {
       return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800`;
     }
@@ -173,11 +160,12 @@ const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
-      <div className="h-48 overflow-hidden relative bg-white border-b border-slate-100">
+      {/* SQUARE IMAGE CONTAINER: aspect-square ensures 1:1 ratio (perfect square) */}
+      <div className="aspect-square w-full overflow-hidden relative bg-white border-b border-slate-100">
         <img
           src={validPhotoUrl || placeholderImage}
           alt={member.name || 'Member'}
-          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 p-4"
+          className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             if (target.src !== placeholderImage) {
