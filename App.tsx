@@ -100,6 +100,21 @@ async function fetchMembers(): Promise<Member[]> {
       };
     });
 
+    // SORTING: Sort by Last Name (Ascending)
+    cleanData.sort((a: any, b: any) => {
+      // Helper to get the last word of the name string
+      const getLastName = (fullName: string) => {
+        if (!fullName) return '';
+        const parts = fullName.trim().split(' ');
+        return parts.length > 0 ? parts[parts.length - 1].toLowerCase() : '';
+      };
+
+      const lastNameA = getLastName(a.name);
+      const lastNameB = getLastName(b.name);
+
+      return lastNameA.localeCompare(lastNameB);
+    });
+
     return cleanData;
   } catch (error) {
     console.error('Error fetching members:', error);
