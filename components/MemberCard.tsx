@@ -8,6 +8,21 @@ interface MemberCardProps {
   onDelete: (id: string) => void;
 }
 
+// HELPER: Fixes Google Drive links so they display correctly on websites
+const getOptimizedImageUrl = (url: string) => {
+  if (!url) return '';
+  
+  // Check if this is a standard Google Drive "view" link
+  if (url.includes('drive.google.com') && (url.includes('uc?') || url.includes('open?') || url.includes('id='))) {
+    const idMatch = url.match(/id=([^&]+)/);
+    if (idMatch && idMatch[1]) {
+      // Convert to a "thumbnail" link which allows embedding (sz=w800 gives high quality)
+      return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800`;
+    }
+  }
+  return url;
+};
+
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => {
   // SAFETY CHECK: Use optional chaining (?.) to prevent crashes if data is missing
   const hasWebsite = member.website && member.website.length > 0;
@@ -17,19 +32,26 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
     ? `https://${member.website}` 
     : member.website;
 
-  // Use placehold.co instead of via.placeholder.com (which is down)
+  // Use placehold.co as a reliable fallback
   const placeholderImage = 'https://placehold.co/400x300?text=No+Photo';
+
+  // Apply the Google Drive link fix
+  const validPhotoUrl = getOptimizedImageUrl(member.photoUrl);
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
       {/* Image Header */}
       <div className="h-48 overflow-hidden relative bg-slate-200">
         <img
-          src={member.photoUrl || placeholderImage}
+          src={validPhotoUrl || placeholderImage}
           alt={member.name || 'Member'}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = placeholderImage;
+            // Prevent infinite loop: only switch to placeholder if we aren't already showing it
+            const target = e.target as HTMLImageElement;
+            if (target.src !== placeholderImage) {
+              target.src = placeholderImage;
+            }
           }}
         />
         {/* Action Buttons (Overlay) */}
