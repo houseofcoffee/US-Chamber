@@ -46,6 +46,40 @@ export interface Member {
 
 export type MemberFormData = Omit<Member, 'id'>;
 
+// --- HELPERS ---
+
+// AUTO-MAGIC SPECIALTY ASSIGNER
+// This automatically guesses specialties based on the business name
+const inferSpecialties = (businessName: string, existingSpecialties: string[]): string[] => {
+  // If the sheet already has specialties, use them!
+  if (existingSpecialties && existingSpecialties.length > 0 && existingSpecialties[0] !== '') {
+    return existingSpecialties;
+  }
+
+  const name = businessName.toLowerCase();
+  const tags = new Set<string>();
+
+  // Keyword Mapping
+  if (name.includes('farm') || name.includes('hay') || name.includes('dairy')) tags.add(Specialty.Agriculture);
+  if (name.includes('tech') || name.includes('web') || name.includes('data') || name.includes('systems') || name.includes('precision') || name.includes('digital') || name.includes('cyber')) tags.add(Specialty.Technology);
+  if (name.includes('health') || name.includes('medical') || name.includes('care') || name.includes('wellness') || name.includes('dental') || name.includes('clinic')) tags.add(Specialty.Healthcare);
+  if (name.includes('bank') || name.includes('capital') || name.includes('wealth') || name.includes('insurance') || name.includes('financial') || name.includes('invest')) tags.add(Specialty.FinancialServices);
+  if (name.includes('media') || name.includes('tv') || name.includes('radio') || name.includes('productions') || name.includes('pixels') || name.includes('communications')) tags.add(Specialty.Media);
+  if (name.includes('marketing') || name.includes('brand') || name.includes('creative') || name.includes('advertising') || name.includes('pr ')) tags.add(Specialty.Marketing);
+  if (name.includes('landscaping') || name.includes('garden') || name.includes('lawn') || name.includes('builders') || name.includes('construction')) tags.add(Specialty.Landscaping);
+  if (name.includes('consulting') || name.includes('group') || name.includes('associates') || name.includes('partners') || name.includes('solutions') || name.includes('advisors') || name.includes('services') || name.includes('hire') || name.includes('staffing')) tags.add(Specialty.Consulting);
+  if (name.includes('coffee') || name.includes('wine') || name.includes('shop') || name.includes('store') || name.includes('market') || name.includes('grape') || name.includes('retail') || name.includes('sales') || name.includes('solar')) tags.add(Specialty.Retail);
+  if (name.includes('online') || name.includes('.com') || name.includes('e-commerce')) tags.add(Specialty.ECommerce);
+
+  // Default fallback if nothing matched
+  if (tags.size === 0) {
+    tags.add(Specialty.Consulting); // Safe default for Chamber members
+  }
+
+  // Return top 2 tags
+  return Array.from(tags).slice(0, 2);
+};
+
 // --- SERVICES ---
 async function fetchMembers(): Promise<Member[]> {
   try {
@@ -55,18 +89,23 @@ async function fetchMembers(): Promise<Member[]> {
     }
     const rawData = await response.json();
     
-    // SAFETY LAYER
-    const cleanData = rawData.map((item: any) => ({
-      id: item.id,
-      name: item.name || '',
-      businessName: item.businessName || '',
-      email: item.email || '',
-      phone: item.phone || '',
-      address: item.address || '',
-      website: item.website || '',
-      specialties: Array.isArray(item.specialties) ? item.specialties : [], 
-      photoUrl: item.photoUrl || '' 
-    }));
+    // SAFETY LAYER & AUTO-ASSIGN
+    const cleanData = rawData.map((item: any) => {
+      const rawSpecialties = Array.isArray(item.specialties) ? item.specialties : item.specialties ? item.specialties.split(',') : [];
+      
+      return {
+        id: item.id,
+        name: item.name || '',
+        businessName: item.businessName || '',
+        email: item.email || '',
+        phone: item.phone || '',
+        address: item.address || '',
+        website: item.website || '',
+        // Use the Smart Assigner here!
+        specialties: inferSpecialties(item.businessName || '', rawSpecialties), 
+        photoUrl: item.photoUrl || '' 
+      };
+    });
 
     return cleanData;
   } catch (error) {
@@ -134,11 +173,11 @@ const MemberCard: React.FC<MemberCardProps> = ({ member }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
-      <div className="h-48 overflow-hidden relative bg-slate-200">
+      <div className="h-48 overflow-hidden relative bg-white border-b border-slate-100">
         <img
           src={validPhotoUrl || placeholderImage}
           alt={member.name || 'Member'}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 p-4"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             if (target.src !== placeholderImage) {
