@@ -15,11 +15,11 @@ export interface Member {
   id: string;
   photoUrl: string;
   name: string;
-  phoneNumber: string;
+  phone: string;
   email: string;
-  businessWebsite: string;
+  website: string;
   businessName: string;
-  businessAddress: string;
+  address: string;
   specialties: Specialty[];
 }
 
