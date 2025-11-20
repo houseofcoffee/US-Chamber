@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Member, MemberFormData } from './types';
+import React, { useState, useEffect } from 'react';
+import { Member } from './types';
 import { MemberCard } from './components/MemberCard';
 import { MemberForm } from './components/MemberForm';
+import { fetchMembers, addMember } from './sheetsService';
 import { Plus, Users, Search } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -9,6 +10,20 @@ const App: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load members on mount
+  useEffect(() => {
+    loadMembers();
+  }, []);
+
+  const loadMembers = async () => {
+    setIsLoading(true);
+    const data = await fetchMembers();
+    setMembers(data);
+    setIsLoading(false);
+  };
 
   const handleAddMember = () => {
     setEditingMember(undefined);
@@ -22,29 +37,36 @@ const App: React.FC = () => {
 
   const handleDeleteMember = (id: string) => {
     if (window.confirm('Are you sure you want to delete this member?')) {
-      setMembers(prev => prev.filter(m => m.id !== id));
+      // Note: Deleting from Google Sheets requires additional implementation
+      alert('Delete functionality needs to be implemented in the Google Apps Script');
     }
   };
 
-  const handleFormSubmit = (data: MemberFormData) => {
+  const handleFormSubmit = async (data: any) => {
+    setIsSaving(true);
+    
     if (editingMember) {
-      // Update existing
-      setMembers(prev => prev.map(m => m.id === editingMember.id ? { ...data, id: m.id } : m));
+      // Update - needs implementation in Google Apps Script
+      alert('Edit functionality needs to be implemented');
+      setIsFormOpen(false);
+      setIsSaving(false);
     } else {
       // Create new
-      const newMember: Member = {
-        ...data,
-        id: crypto.randomUUID(),
-      };
-      setMembers(prev => [newMember, ...prev]);
+      const result = await addMember(data);
+      if (result.success) {
+        await loadMembers(); // Reload to get the new member
+        setIsFormOpen(false);
+      } else {
+        alert('Failed to add member. Please try again.');
+      }
+      setIsSaving(false);
     }
-    setIsFormOpen(false);
   };
 
   const filteredMembers = members.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    m.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
+    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    m.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.specialties && m.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   return (
@@ -79,62 +101,3 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Search Bar */}
-        <div className="mb-8 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search members by name, business, or specialty..."
-            className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Members Grid */}
-        {filteredMembers.length === 0 ? (
-          <div className="text-center py-20">
-             <div className="mx-auto h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-               <Users className="h-10 w-10 text-slate-400" />
-             </div>
-             <h3 className="text-lg font-medium text-slate-900">No members found</h3>
-             <p className="mt-2 text-slate-500">
-               {searchTerm ? "Try adjusting your search terms." : "Get started by adding a new member."}
-             </p>
-             {!searchTerm && (
-                <div className="mt-6 flex justify-center">
-                   <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Member</button>
-                </div>
-             )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredMembers.map((member) => (
-              <MemberCard
-                key={member.id}
-                member={member}
-                onEdit={handleEditMember}
-                onDelete={handleDeleteMember}
-              />
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Modal Form */}
-      {isFormOpen && (
-        <MemberForm
-          initialData={editingMember}
-          onSubmit={handleFormSubmit}
-          onCancel={() => setIsFormOpen(false)}
-        />
-      )}
-    </div>
-  );
-};
-
-export default App;
