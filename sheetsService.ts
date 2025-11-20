@@ -18,8 +18,25 @@ export async function fetchMembers(): Promise<Member[]> {
     if (!response.ok) {
       throw new Error('Failed to fetch members');
     }
-    const data = await response.json();
-    return data;
+    const rawData = await response.json();
+    
+    // SAFETY LAYER: 
+    // This converts "undefined" data into empty strings so the app doesn't crash.
+    const cleanData = rawData.map((item: any) => ({
+      id: item.id,
+      name: item.name || '',
+      businessName: item.businessName || '',
+      email: item.email || '',
+      phone: item.phone || '',
+      address: item.address || '',
+      website: item.website || '',
+      // If specialties is broken/missing, make it an empty list []
+      specialties: Array.isArray(item.specialties) ? item.specialties : [], 
+      // If photoUrl is missing, make it an empty string "" to fix the startsWith error
+      photoUrl: item.photoUrl || '' 
+    }));
+
+    return cleanData;
   } catch (error) {
     console.error('Error fetching members:', error);
     return [];
