@@ -10,13 +10,13 @@ interface MemberFormProps {
 }
 
 const EMPTY_FORM: MemberFormData = {
-  photoUrl: 'https://via.placeholder.com/400x300?text=Upload+Photo',
+  photoUrl: '',
   name: '',
-  phoneNumber: '',
+  phone: '',
   email: '',
-  businessWebsite: '',
+  website: '',
   businessName: '',
-  businessAddress: '',
+  address: '',
   specialties: [],
 };
 
@@ -90,6 +90,8 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
     onSubmit(formData);
   };
 
+  const photoPreview = formData.photoUrl || 'https://via.placeholder.com/400x300?text=Upload+Photo';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
@@ -112,7 +114,7 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
                <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
                  <div className="w-24 h-24 rounded-full bg-white overflow-hidden shrink-0 border-2 border-white shadow-md">
                    <img 
-                    src={formData.photoUrl} 
+                    src={photoPreview} 
                     alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Photo'} 
@@ -183,8 +185,8 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
                 <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
                 <input
                   type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
                   placeholder="(555) 123-4567"
                   className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -196,8 +198,8 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
               <label className="block text-sm font-medium text-slate-700 mb-1">Business Address</label>
               <input
                 type="text"
-                name="businessAddress"
-                value={formData.businessAddress}
+                name="address"
+                value={formData.address}
                 onChange={handleChange}
                 placeholder="123 Main St, City, State"
                 className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -208,8 +210,8 @@ export const MemberForm: React.FC<MemberFormProps> = ({ initialData, onSubmit, o
               <label className="block text-sm font-medium text-slate-700 mb-1">Business Website</label>
               <input
                 type="text"
-                name="businessWebsite"
-                value={formData.businessWebsite}
+                name="website"
+                value={formData.website}
                 onChange={handleChange}
                 placeholder="www.example.com"
                 className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
