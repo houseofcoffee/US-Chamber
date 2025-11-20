@@ -9,23 +9,27 @@ interface MemberCardProps {
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => {
-  // SAFETY CHECK: If the website is missing/empty, don't try to link it
+  // SAFETY CHECK: Use optional chaining (?.) to prevent crashes if data is missing
   const hasWebsite = member.website && member.website.length > 0;
-  // Helper to ensure website has https
-  const websiteUrl = hasWebsite && !member.website.startsWith('http') 
+  
+  // Ensure website has https, but strictly check if it exists first
+  const websiteUrl = hasWebsite && !member.website?.startsWith('http') 
     ? `https://${member.website}` 
     : member.website;
+
+  // Use placehold.co instead of via.placeholder.com (which is down)
+  const placeholderImage = 'https://placehold.co/400x300?text=No+Photo';
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
       {/* Image Header */}
       <div className="h-48 overflow-hidden relative bg-slate-200">
         <img
-          src={member.photoUrl || 'https://via.placeholder.com/400x300?text=No+Photo'}
-          alt={member.name}
+          src={member.photoUrl || placeholderImage}
+          alt={member.name || 'Member'}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Photo';
+            (e.target as HTMLImageElement).src = placeholderImage;
           }}
         />
         {/* Action Buttons (Overlay) */}
@@ -56,7 +60,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
 
         {/* Specialties Chips */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {member.specialties && member.specialties.map((specialty) => (
+          {member.specialties?.map((specialty) => (
             <span
               key={specialty}
               className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full"
@@ -77,7 +81,6 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
           
           <div className="flex items-center gap-3">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-            {/* FIXED: Changed member.phoneNumber to member.phone */}
             <a href={`tel:${member.phone}`} className="hover:text-indigo-600 transition-colors">
               {member.phone}
             </a>
@@ -85,13 +88,11 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
 
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            {/* FIXED: Changed member.businessAddress to member.address */}
             <span className="leading-tight">{member.address}</span>
           </div>
 
           <div className="flex items-center gap-3">
             <LinkIcon className="w-4 h-4 text-slate-400 shrink-0" />
-            {/* FIXED: Changed member.businessWebsite to member.website */}
             {hasWebsite ? (
               <a 
                 href={websiteUrl} 
