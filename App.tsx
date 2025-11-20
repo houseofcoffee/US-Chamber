@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload } from 'lucide-react';
+import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const SITE_PASSWORD = 'member'; 
@@ -480,6 +480,7 @@ const App: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
@@ -553,11 +554,17 @@ const App: React.FC = () => {
     }
   };
 
-  const filteredMembers = members.filter(m => 
-    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    m.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.specialties && m.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())))
-  );
+  const filteredMembers = members.filter(m => {
+    const matchesSearch = m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      m.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.specialties && m.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())));
+    
+    const matchesSpecialty = selectedSpecialty 
+      ? m.specialties && m.specialties.includes(selectedSpecialty)
+      : true;
+
+    return matchesSearch && matchesSpecialty;
+  });
 
   if (!isAuthenticated) {
     return (
@@ -642,6 +649,35 @@ const App: React.FC = () => {
           />
         </div>
 
+        {/* Specialty Filter Bubbles */}
+        <div className="mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedSpecialty(null)}
+              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                selectedSpecialty === null
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              All
+            </button>
+            {ALL_SPECIALTIES.map((specialty) => (
+              <button
+                key={specialty}
+                onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? null : specialty)}
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedSpecialty === specialty
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                }`}
+              >
+                {specialty}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="text-center py-20">
             <div className="mx-auto h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -652,13 +688,13 @@ const App: React.FC = () => {
         ) : filteredMembers.length === 0 ? (
           <div className="text-center py-20">
              <div className="mx-auto h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-               <Users className="h-10 w-10 text-slate-400" />
+               <Filter className="h-10 w-10 text-slate-400" />
              </div>
              <h3 className="text-lg font-medium text-slate-900">No members found</h3>
              <p className="mt-2 text-slate-500">
-               {searchTerm ? "Try adjusting your search terms." : "Get started by adding a new member."}
+               {searchTerm || selectedSpecialty ? "Try adjusting your filters." : "Get started by adding a new member."}
              </p>
-             {!searchTerm && (
+             {!searchTerm && !selectedSpecialty && (
                 <div className="mt-6 flex justify-center">
                    <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Member</button>
                 </div>
