@@ -105,8 +105,18 @@ interface MemberCardProps {
 
 const getOptimizedImageUrl = (url: string) => {
   if (!url) return '';
-  if (url.includes('drive.google.com') && (url.includes('uc?') || url.includes('open?') || url.includes('id='))) {
-    const idMatch = url.match(/id=([^&]+)/);
+  
+  // Check for standard Google Drive links
+  if (url.includes('drive.google.com')) {
+    // Pattern 1: Query parameter style (id=...)
+    let idMatch = url.match(/id=([^&]+)/);
+    
+    // Pattern 2: Path style (/file/d/...) - THIS IS THE FIX
+    if (!idMatch) {
+      idMatch = url.match(/\/file\/d\/([^/]+)/);
+    }
+
+    // If we found an ID, convert to thumbnail format
     if (idMatch && idMatch[1]) {
       return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800`;
     }
