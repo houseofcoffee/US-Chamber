@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter, Edit2 } from 'lucide-react';
+import { Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter, Edit2 } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const SITE_PASSWORD = 'member'; 
@@ -652,17 +652,6 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:hidden">
               Small Business Council Members
             </h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleAddMember}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all hover:shadow-md active:scale-95"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Add Member</span>
-              <span className="sm:hidden">Add</span>
-            </button>
           </div>
         </div>
       </header>
