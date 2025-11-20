@@ -102,7 +102,6 @@ async function fetchMembers(): Promise<Member[]> {
 
     // SORTING: Sort by Last Name (Ascending)
     cleanData.sort((a: any, b: any) => {
-      // Helper to get the last word of the name string
       const getLastName = (fullName: string) => {
         if (!fullName) return '';
         const parts = fullName.trim().split(' ');
@@ -626,7 +625,7 @@ const App: React.FC = () => {
             <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-indigo-600" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Member Directory</h1>
+            <h1 className="text-xl font-bold text-slate-900 text-center">U.S. Chamber of Commerce<br/>Small Business Council Members</h1>
             <p className="text-slate-500 mt-2 text-sm">Please enter the password to access.</p>
           </div>
 
@@ -667,10 +666,10 @@ const App: React.FC = () => {
               <Users className="text-white w-6 h-6" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 hidden sm:block">
-              Elite Member Directory
+              U.S. Chamber of Commerce Small Business Council Members
             </h1>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:hidden">
-              Directory
+              Small Business Council Members
             </h1>
           </div>
 
