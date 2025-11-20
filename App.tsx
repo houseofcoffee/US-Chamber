@@ -101,3 +101,78 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Search Bar */}
+        <div className="mb-8 relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search members by name, business, or specialty..."
+            className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="text-center py-20">
+            <div className="mx-auto h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="h-10 w-10 text-slate-400 animate-pulse" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-900">Loading members...</h3>
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="text-center py-20">
+             <div className="mx-auto h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+               <Users className="h-10 w-10 text-slate-400" />
+             </div>
+             <h3 className="text-lg font-medium text-slate-900">No members found</h3>
+             <p className="mt-2 text-slate-500">
+               {searchTerm ? "Try adjusting your search terms." : "Get started by adding a new member."}
+             </p>
+             {!searchTerm && (
+                <div className="mt-6 flex justify-center">
+                   <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Member</button>
+                </div>
+             )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredMembers.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                onEdit={handleEditMember}
+                onDelete={handleDeleteMember}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Modal Form */}
+      {isFormOpen && (
+        <MemberForm
+          initialData={editingMember}
+          onSubmit={handleFormSubmit}
+          onCancel={() => setIsFormOpen(false)}
+        />
+      )}
+      
+      {/* Saving overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6">
+            <p className="text-lg font-medium">Saving member...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
