@@ -1,6 +1,6 @@
 import React from 'react';
 import { Member } from '../types';
-import { Mail, Phone, MapPin, Link as LinkIcon, Edit2, Trash2, Globe } from 'lucide-react';
+import { Mail, Phone, MapPin, Link as LinkIcon, Edit2, Trash2 } from 'lucide-react';
 
 interface MemberCardProps {
   member: Member;
@@ -9,12 +9,19 @@ interface MemberCardProps {
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => {
+  // SAFETY CHECK: If the website is missing/empty, don't try to link it
+  const hasWebsite = member.website && member.website.length > 0;
+  // Helper to ensure website has https
+  const websiteUrl = hasWebsite && !member.website.startsWith('http') 
+    ? `https://${member.website}` 
+    : member.website;
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-slate-100 group">
       {/* Image Header */}
       <div className="h-48 overflow-hidden relative bg-slate-200">
         <img
-          src={member.photoUrl}
+          src={member.photoUrl || 'https://via.placeholder.com/400x300?text=No+Photo'}
           alt={member.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
@@ -49,7 +56,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
 
         {/* Specialties Chips */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {member.specialties.map((specialty) => (
+          {member.specialties && member.specialties.map((specialty) => (
             <span
               key={specialty}
               className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full"
@@ -70,26 +77,33 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete
           
           <div className="flex items-center gap-3">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-            <a href={`tel:${member.phoneNumber}`} className="hover:text-indigo-600 transition-colors">
-              {member.phoneNumber}
+            {/* FIXED: Changed member.phoneNumber to member.phone */}
+            <a href={`tel:${member.phone}`} className="hover:text-indigo-600 transition-colors">
+              {member.phone}
             </a>
           </div>
 
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            <span className="leading-tight">{member.businessAddress}</span>
+            {/* FIXED: Changed member.businessAddress to member.address */}
+            <span className="leading-tight">{member.address}</span>
           </div>
 
           <div className="flex items-center gap-3">
             <LinkIcon className="w-4 h-4 text-slate-400 shrink-0" />
-            <a 
-              href={member.businessWebsite.startsWith('http') ? member.businessWebsite : `https://${member.businessWebsite}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-indigo-600 truncate transition-colors"
-            >
-              {member.businessWebsite}
-            </a>
+            {/* FIXED: Changed member.businessWebsite to member.website */}
+            {hasWebsite ? (
+              <a 
+                href={websiteUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-indigo-600 truncate transition-colors"
+              >
+                {member.website}
+              </a>
+            ) : (
+              <span className="text-slate-400 italic">No website</span>
+            )}
           </div>
         </div>
       </div>
