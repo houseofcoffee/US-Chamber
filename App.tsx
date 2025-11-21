@@ -7,18 +7,18 @@ const ADMIN_PASSWORD = 'admin'; // Password for adding new members
 const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzeaKmya-twSvdeOauZsZSbsJSump5WXfCr4jwDcITk_0QJCm1LOHdKxo0w7nqIkKSn2Q/exec';
 
 // --- TYPES ---
-// Updated 10 Specialties List
+// Updated 10 CLEAN Specialties (No Commas)
 export enum Specialty {
-  Consulting = 'Consulting & Professional Services',
+  Consulting = 'Consulting Services',
   Technology = 'Technology & IT',
   Retail = 'Retail & E-Commerce',
-  Manufacturing = 'Manufacturing & Industrial',
-  Marketing = 'Marketing, Media & Communications',
-  Finance = 'Financial Services & Insurance',
-  Healthcare = 'Healthcare & Wellness',
-  Construction = 'Construction & Real Estate',
-  Hospitality = 'Hospitality, Events & Tourism',
-  Agriculture = 'Agriculture & Food Production',
+  Manufacturing = 'Manufacturing',
+  Marketing = 'Marketing & Media',
+  Finance = 'Financial Services',
+  Healthcare = 'Healthcare',
+  Construction = 'Construction',
+  Hospitality = 'Hospitality',
+  Agriculture = 'Agriculture',
 }
 
 export const ALL_SPECIALTIES = [
@@ -51,7 +51,7 @@ export type MemberFormData = Omit<Member, 'id'>;
 
 // --- HELPERS ---
 
-// Updated Inference Logic for the new 10 categories
+// Updated Inference Logic for the new CLEAN categories
 const inferSpecialties = (businessName: string, existingSpecialties: string[]): string[] => {
   if (existingSpecialties && existingSpecialties.length > 0 && existingSpecialties[0] !== '') {
     return existingSpecialties;
@@ -72,13 +72,13 @@ const inferSpecialties = (businessName: string, existingSpecialties: string[]): 
   // 4. Finance
   if (name.includes('bank') || name.includes('capital') || name.includes('wealth') || name.includes('insurance') || name.includes('financial') || name.includes('invest') || name.includes('processing') || name.includes('funds')) tags.add(Specialty.Finance);
   
-  // 5. Media/Marketing
+  // 5. Marketing & Media
   if (name.includes('media') || name.includes('tv') || name.includes('radio') || name.includes('productions') || name.includes('pixels') || name.includes('communications') || name.includes('marketing') || name.includes('brand') || name.includes('creative') || name.includes('promos') || name.includes('arcade')) tags.add(Specialty.Marketing);
   
-  // 6. Construction/Real Estate
+  // 6. Construction
   if (name.includes('landscaping') || name.includes('garden') || name.includes('lawn') || name.includes('builders') || name.includes('construction') || name.includes('contracting') || name.includes('lodging') || name.includes('properties')) tags.add(Specialty.Construction);
   
-  // 7. Consulting
+  // 7. Consulting Services
   if (name.includes('consulting') || name.includes('group') || name.includes('associates') || name.includes('partners') || name.includes('solutions') || name.includes('advisors') || name.includes('services') || name.includes('hire') || name.includes('staffing') || name.includes('enterprises') || name.includes('council') || name.includes('chamber')) tags.add(Specialty.Consulting);
   
   // 8. Retail
