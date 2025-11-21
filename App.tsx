@@ -89,6 +89,18 @@ const getOptimizedImageUrl = (url: string) => {
   return url;
 };
 
+const formatPhoneNumber = (phone: string) => {
+  if (!phone) return '';
+  // Remove all non-numeric characters
+  const cleaned = ('' + phone).replace(/\D/g, '');
+  // Format as xxx.xxx.xxxx
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `${match[1]}.${match[2]}.${match[3]}`;
+  }
+  return phone;
+};
+
 // --- SERVICES ---
 
 async function fetchMembers(): Promise<Member[]> {
@@ -281,7 +293,7 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, onDelete }) => 
           <div className="flex items-center gap-3">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
             <a href={`tel:${member.phone}`} className="hover:text-indigo-600 transition-colors">
-              {member.phone}
+              {formatPhoneNumber(member.phone)}
             </a>
           </div>
 
