@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter, Edit2 } from 'lucide-react';
+import { Plus, Users, Search, Lock, Mail, Phone, MapPin, Link as LinkIcon, X, Check, Upload, Filter, Edit2 } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const SITE_PASSWORD = 'member'; 
+const ADMIN_PASSWORD = 'admin'; // Password for adding new members
 const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzeaKmya-twSvdeOauZsZSbsJSump5WXfCr4jwDcITk_0QJCm1LOHdKxo0w7nqIkKSn2Q/exec';
 
 // --- TYPES ---
@@ -91,9 +92,7 @@ const getOptimizedImageUrl = (url: string) => {
 
 const formatPhoneNumber = (phone: string) => {
   if (!phone) return '';
-  // Remove all non-numeric characters
   const cleaned = ('' + phone).replace(/\D/g, '');
-  // Format as xxx.xxx.xxxx
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
   if (match) {
     return `${match[1]}.${match[2]}.${match[3]}`;
@@ -172,11 +171,13 @@ async function addMember(member: any): Promise<{ success: boolean; id?: string }
 // --- SUB-COMPONENTS ---
 
 interface PinModalProps {
+  title?: string;
+  message?: string;
   onSubmit: (pin: string) => void;
   onCancel: () => void;
 }
 
-const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
+const PinModal: React.FC<PinModalProps> = ({ title, message, onSubmit, onCancel }) => {
   const [pin, setPin] = useState('');
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,16 +189,15 @@ const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl p-6">
         <div className="text-center mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Enter Security PIN</h3>
-          <p className="text-sm text-slate-500 mt-1">Please enter the last 4 digits of your phone number to edit.</p>
+          <h3 className="text-lg font-bold text-slate-900">{title || 'Enter Security PIN'}</h3>
+          <p className="text-sm text-slate-500 mt-1">{message || 'Please enter the last 4 digits of your phone number.'}</p>
         </div>
         <form onSubmit={handleSubmit}>
           <input
             type="password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            maxLength={4}
-            placeholder="0000"
+            placeholder="****"
             className="w-full p-4 text-center text-2xl tracking-widest border-2 border-slate-200 rounded-xl focus:border-indigo-600 focus:ring-0 outline-none mb-6 font-mono"
             autoFocus
           />
@@ -211,7 +211,7 @@ const PinModal: React.FC<PinModalProps> = ({ onSubmit, onCancel }) => {
             </button>
             <button
               type="submit"
-              disabled={pin.length < 4}
+              disabled={pin.length === 0}
               className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Verify
@@ -515,7 +515,11 @@ const App: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | undefined>(undefined);
+  
+  // Verify states
   const [verifyPinMember, setVerifyPinMember] = useState<Member | undefined>(undefined);
+  const [isVerifyingAdd, setIsVerifyingAdd] = useState(false); // New state for adding verification
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -552,9 +556,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAddMember = () => {
-    setEditingMember(undefined);
-    setIsFormOpen(true);
+  const handleAddClick = () => {
+    setIsVerifyingAdd(true); // Open verification modal instead of form directly
+  };
+
+  const handleAddVerify = (password: string) => {
+    if (password === ADMIN_PASSWORD) {
+      setIsVerifyingAdd(false);
+      setEditingMember(undefined);
+      setIsFormOpen(true);
+    } else {
+      alert("Incorrect Password. Only admins can add members.");
+    }
   };
 
   const handleEditClick = (member: Member) => {
@@ -665,6 +678,17 @@ const App: React.FC = () => {
               Small Business Council Members
             </h1>
           </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleAddClick}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all hover:shadow-md active:scale-95"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">Add Member</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -728,7 +752,7 @@ const App: React.FC = () => {
              </p>
              {!searchTerm && !selectedSpecialty && (
                 <div className="mt-6 flex justify-center">
-                   <button onClick={handleAddMember} className="text-indigo-600 hover:underline">Add Member</button>
+                   <button onClick={handleAddClick} className="text-indigo-600 hover:underline">Add Member</button>
                 </div>
              )}
           </div>
@@ -756,8 +780,19 @@ const App: React.FC = () => {
 
       {verifyPinMember && (
         <PinModal
+          title="Enter Security PIN"
+          message="Please enter the last 4 digits of the member's phone number to edit."
           onSubmit={handlePinVerify}
           onCancel={() => setVerifyPinMember(undefined)}
+        />
+      )}
+
+      {isVerifyingAdd && (
+        <PinModal
+          title="Enter Admin Password"
+          message="Please enter the admin password to add a new member."
+          onSubmit={handleAddVerify}
+          onCancel={() => setIsVerifyingAdd(false)}
         />
       )}
       
