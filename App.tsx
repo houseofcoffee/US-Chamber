@@ -7,17 +7,18 @@ const ADMIN_PASSWORD = 'admin'; // Password for adding new members
 const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzeaKmya-twSvdeOauZsZSbsJSump5WXfCr4jwDcITk_0QJCm1LOHdKxo0w7nqIkKSn2Q/exec';
 
 // --- TYPES ---
+// Updated 10 Specialties List
 export enum Specialty {
   Consulting = 'Consulting & Professional Services',
   Technology = 'Technology & IT',
   Retail = 'Retail & E-Commerce',
   Manufacturing = 'Manufacturing & Industrial',
-  Marketing = 'Marketing & Media',
-  Finance = 'Financial Services',
+  Marketing = 'Marketing, Media & Communications',
+  Finance = 'Financial Services & Insurance',
   Healthcare = 'Healthcare & Wellness',
   Construction = 'Construction & Real Estate',
-  Hospitality = 'Hospitality & Events',
-  Agriculture = 'Agriculture & Food',
+  Hospitality = 'Hospitality, Events & Tourism',
+  Agriculture = 'Agriculture & Food Production',
 }
 
 export const ALL_SPECIALTIES = [
@@ -50,6 +51,7 @@ export type MemberFormData = Omit<Member, 'id'>;
 
 // --- HELPERS ---
 
+// Updated Inference Logic for the new 10 categories
 const inferSpecialties = (businessName: string, existingSpecialties: string[]): string[] => {
   if (existingSpecialties && existingSpecialties.length > 0 && existingSpecialties[0] !== '') {
     return existingSpecialties;
@@ -58,17 +60,37 @@ const inferSpecialties = (businessName: string, existingSpecialties: string[]): 
   const name = businessName.toLowerCase();
   const tags = new Set<string>();
 
-  if (name.includes('farm') || name.includes('hay') || name.includes('dairy')) tags.add(Specialty.Agriculture);
-  if (name.includes('tech') || name.includes('web') || name.includes('data') || name.includes('systems') || name.includes('precision') || name.includes('digital') || name.includes('cyber')) tags.add(Specialty.Technology);
-  if (name.includes('health') || name.includes('medical') || name.includes('care') || name.includes('wellness') || name.includes('dental') || name.includes('clinic')) tags.add(Specialty.Healthcare);
-  if (name.includes('bank') || name.includes('capital') || name.includes('wealth') || name.includes('insurance') || name.includes('financial') || name.includes('invest')) tags.add(Specialty.FinancialServices);
-  if (name.includes('media') || name.includes('tv') || name.includes('radio') || name.includes('productions') || name.includes('pixels') || name.includes('communications')) tags.add(Specialty.Media);
-  if (name.includes('marketing') || name.includes('brand') || name.includes('creative') || name.includes('advertising') || name.includes('pr ')) tags.add(Specialty.Marketing);
-  if (name.includes('landscaping') || name.includes('garden') || name.includes('lawn') || name.includes('builders') || name.includes('construction')) tags.add(Specialty.Landscaping);
-  if (name.includes('consulting') || name.includes('group') || name.includes('associates') || name.includes('partners') || name.includes('solutions') || name.includes('advisors') || name.includes('services') || name.includes('hire') || name.includes('staffing')) tags.add(Specialty.Consulting);
-  if (name.includes('coffee') || name.includes('wine') || name.includes('shop') || name.includes('store') || name.includes('market') || name.includes('grape') || name.includes('retail') || name.includes('sales') || name.includes('solar')) tags.add(Specialty.Retail);
-  if (name.includes('online') || name.includes('.com') || name.includes('e-commerce')) tags.add(Specialty.ECommerce);
+  // 1. Agriculture
+  if (name.includes('farm') || name.includes('hay') || name.includes('dairy') || name.includes('produce')) tags.add(Specialty.Agriculture);
+  
+  // 2. Technology
+  if (name.includes('tech') || name.includes('web') || name.includes('data') || name.includes('systems') || name.includes('cyber') || name.includes('geek') || name.includes('software') || name.includes('science')) tags.add(Specialty.Technology);
+  
+  // 3. Healthcare
+  if (name.includes('health') || name.includes('medical') || name.includes('care') || name.includes('wellness') || name.includes('dental') || name.includes('clinic') || name.includes('clarity')) tags.add(Specialty.Healthcare);
+  
+  // 4. Finance
+  if (name.includes('bank') || name.includes('capital') || name.includes('wealth') || name.includes('insurance') || name.includes('financial') || name.includes('invest') || name.includes('processing') || name.includes('funds')) tags.add(Specialty.Finance);
+  
+  // 5. Media/Marketing
+  if (name.includes('media') || name.includes('tv') || name.includes('radio') || name.includes('productions') || name.includes('pixels') || name.includes('communications') || name.includes('marketing') || name.includes('brand') || name.includes('creative') || name.includes('promos') || name.includes('arcade')) tags.add(Specialty.Marketing);
+  
+  // 6. Construction/Real Estate
+  if (name.includes('landscaping') || name.includes('garden') || name.includes('lawn') || name.includes('builders') || name.includes('construction') || name.includes('contracting') || name.includes('lodging') || name.includes('properties')) tags.add(Specialty.Construction);
+  
+  // 7. Consulting
+  if (name.includes('consulting') || name.includes('group') || name.includes('associates') || name.includes('partners') || name.includes('solutions') || name.includes('advisors') || name.includes('services') || name.includes('hire') || name.includes('staffing') || name.includes('enterprises') || name.includes('council') || name.includes('chamber')) tags.add(Specialty.Consulting);
+  
+  // 8. Retail
+  if (name.includes('coffee') || name.includes('wine') || name.includes('shop') || name.includes('store') || name.includes('market') || name.includes('grape') || name.includes('retail') || name.includes('sales') || name.includes('furniture') || name.includes('companies')) tags.add(Specialty.Retail);
+  
+  // 9. Manufacturing
+  if (name.includes('manufacturing') || name.includes('machine') || name.includes('precision') || name.includes('alloy') || name.includes('industrial') || name.includes('factory')) tags.add(Specialty.Manufacturing);
 
+  // 10. Hospitality
+  if (name.includes('hotel') || name.includes('motel') || name.includes('inn') || name.includes('event') || name.includes('tourism') || name.includes('brewing') || name.includes('catering') || name.includes('shelf')) tags.add(Specialty.Hospitality);
+
+  // Default fallback
   if (tags.size === 0) {
     tags.add(Specialty.Consulting);
   }
