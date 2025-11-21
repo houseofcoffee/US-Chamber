@@ -728,26 +728,27 @@ const App: React.FC = () => {
           />
         </div>
 
-        <div className="mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex gap-2">
+        {/* Updated Grid Layout for Specialties */}
+        <div className="mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <button
               onClick={() => setSelectedSpecialty(null)}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`whitespace-nowrap px-4 py-3 rounded-xl text-sm font-medium transition-all border text-center flex items-center justify-center ${
                 selectedSpecialty === null
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-md border-indigo-600'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-indigo-200'
               }`}
             >
-              All
+              All Members
             </button>
             {ALL_SPECIALTIES.map((specialty) => (
               <button
                 key={specialty}
                 onClick={() => setSelectedSpecialty(selectedSpecialty === specialty ? null : specialty)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`whitespace-nowrap px-4 py-3 rounded-xl text-sm font-medium transition-all border text-center flex items-center justify-center ${
                   selectedSpecialty === specialty
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    ? 'bg-indigo-600 text-white shadow-md border-indigo-600'
+                    : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-indigo-200'
                 }`}
               >
                 {specialty}
