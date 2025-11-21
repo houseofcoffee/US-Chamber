@@ -8,29 +8,29 @@ const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzeaKmya-twSvdeO
 
 // --- TYPES ---
 export enum Specialty {
-  Agriculture = 'Agriculture',
-  Consulting = 'Consulting',
-  ECommerce = 'E-Commerce',
-  FinancialServices = 'Financial Services',
-  Healthcare = 'Healthcare',
-  Landscaping = 'Landscaping',
-  Marketing = 'Marketing',
-  Media = 'Media',
-  Retail = 'Retail',
-  Technology = 'Technology',
+  Consulting = 'Consulting & Professional Services',
+  Technology = 'Technology & IT',
+  Retail = 'Retail & E-Commerce',
+  Manufacturing = 'Manufacturing & Industrial',
+  Marketing = 'Marketing & Media',
+  Finance = 'Financial Services',
+  Healthcare = 'Healthcare & Wellness',
+  Construction = 'Construction & Real Estate',
+  Hospitality = 'Hospitality & Events',
+  Agriculture = 'Agriculture & Food',
 }
 
 export const ALL_SPECIALTIES = [
-  Specialty.Agriculture,
   Specialty.Consulting,
-  Specialty.ECommerce,
-  Specialty.FinancialServices,
-  Specialty.Healthcare,
-  Specialty.Landscaping,
-  Specialty.Marketing,
-  Specialty.Media,
-  Specialty.Retail,
   Specialty.Technology,
+  Specialty.Retail,
+  Specialty.Manufacturing,
+  Specialty.Marketing,
+  Specialty.Finance,
+  Specialty.Healthcare,
+  Specialty.Construction,
+  Specialty.Hospitality,
+  Specialty.Agriculture,
 ];
 
 export interface Member {
